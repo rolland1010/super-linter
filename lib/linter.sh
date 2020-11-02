@@ -325,6 +325,18 @@ GetLinterVersions() {
   debug "---------------------------------------------"
   debug "Linter Version Info:"
 
+  if ! [ -e "${VERSION_FILE}" ] && [ "${WRITE_LINTER_VERSIONS_FILE}" = "true" ]; then
+    debug "Building linter version file..."
+    # shellcheck source=/dev/null
+    source /action/lib/linterVersions.sh # Source the function script(s)
+    if BuildLinterVersions "${VERSION_FILE}" "${LINTER_NAMES_ARRAY[@]}"; then
+      info "Linter version file built correctly."
+      exit
+    else
+      fatal "Error while building the versions file."
+    fi
+  fi
+
   ################################
   # Cat the linter versions file #
   ################################
@@ -340,7 +352,7 @@ GetLinterVersions() {
   ##############################
   if [ ${ERROR_CODE} -ne 0 ]; then
     # Failure
-    warn "Failed to view version file:[${VERSION_FILE}]"
+    fatal "Failed to view version file:[${VERSION_FILE}]"
   else
     # Success
     debug "${CAT_CMD}"
@@ -1125,6 +1137,11 @@ if [ -n "${OUTPUT_FORMAT}" ]; then
   fi
 fi
 
+##################################
+# Get and print all version info #
+##################################
+GetLinterVersions
+
 #######################
 # Get GitHub Env Vars #
 #######################
@@ -1224,11 +1241,6 @@ for i in "${!LINTER_COMMANDS_ARRAY[@]}"; do
   debug "Linter key: $i, command: ${LINTER_COMMANDS_ARRAY[$i]}"
 done
 debug "---------------------------------------------"
-
-##################################
-# Get and print all version info #
-##################################
-GetLinterVersions
 
 ###########################################
 # Build the list of files for each linter #
